@@ -1,682 +1,524 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trash Gxng | Attendance</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trash Gxng — Marketing KPI Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --yellow: #F5C500;
-      --black: #111111;
-      --white: #FFFFFF;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: var(--yellow);
-      min-height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: var(--black);
-      height: 58px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px 0 20px;
-      z-index: 100;
-      border-bottom-left-radius: 28px;
-    }
-
-    .back-btn {
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.4);
-      color: var(--white);
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 7px 16px;
-      border-radius: 20px;
-      line-height: 1;
-      transition: background 0.18s, border-color 0.18s;
-      font-family: Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      letter-spacing: 0.5px;
-    }
-    .back-btn:hover  { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.7); }
-    .back-btn:active { background: rgba(255,255,255,0.38); }
-    .back-btn.hidden { visibility: hidden; pointer-events: none; }
-    .back-btn span { font-size: 13px; letter-spacing: 0.5px; }
-
-    .logo-img {
-      height: 36px;
-      width: auto;
-      object-fit: contain;
-      display: block;
-    }
-    .logo-fallback {
-      color: var(--white);
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      display: none;
-    }
-    .logo-fallback .x { color: var(--yellow); }
-
-    .side-text {
-      position: fixed;
-      right: -38px;
-      top: 50%;
-      transform: translateY(-50%) rotate(90deg);
-      font-size: 11px;
-      letter-spacing: 4px;
-      color: rgba(0,0,0,0.15);
-      white-space: nowrap;
-      pointer-events: none;
-      text-transform: lowercase;
-    }
-
-    .progress-bar {
-      position: fixed;
-      top: 58px;
-      left: 0;
-      height: 3px;
-      background: var(--black);
-      width: 0%;
-      transition: width 0.5s cubic-bezier(0.77,0,0.175,1);
-      z-index: 99;
-    }
-
-    .slides { position: relative; height: 100vh; height: var(--vh, 100vh); width: 100%; }
-
-    .slide {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 100px 10vw 60px;
-      transform: translateY(100%);
-      transition: transform 0.48s cubic-bezier(0.77,0,0.175,1), opacity 0.48s ease;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .slide.active  { transform: translateY(0);    opacity: 1; pointer-events: all; }
-    .slide.past    { transform: translateY(-100%); opacity: 0; pointer-events: none; }
-
-    /* ── Shake animation (validation fail) ── */
-    @keyframes shake {
-      0%,100% { margin-left: 0; }
-      15%     { margin-left: -10px; }
-      30%     { margin-left:  10px; }
-      45%     { margin-left:  -7px; }
-      60%     { margin-left:   7px; }
-      75%     { margin-left:  -4px; }
-      90%     { margin-left:   4px; }
-    }
-    .slide.shake { animation: shake 0.42s ease; }
-
-    .step-num {
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(0,0,0,0.4);
-      margin-bottom: 10px;
-      letter-spacing: 1px;
-    }
-
-    .question {
-      font-size: clamp(26px, 4vw, 50px);
-      font-weight: 900;
-      color: var(--black);
-      margin-bottom: 36px;
-      line-height: 1.15;
-      max-width: 680px;
-    }
-
-    .input-wrap { position: relative; max-width: 500px; }
-
-    .form-input {
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid rgba(0,0,0,0.28);
-      font-size: clamp(20px, 3vw, 28px);
-      font-weight: 700;
-      color: var(--black);
-      padding: 8px 0 10px;
-      width: 100%;
-      outline: none;
-      font-family: Arial, sans-serif;
-      transition: border-color 0.2s;
-      caret-color: var(--black);
-    }
-    .form-input:focus   { border-bottom-color: var(--black); }
-    .form-input::placeholder {
-      color: rgba(0,0,0,0.28);
-      font-weight: 400;
-      font-size: clamp(18px, 2.5vw, 24px);
-    }
-
-    .ac-list {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0; right: 0;
-      background: var(--black);
-      border-radius: 8px;
-      overflow: hidden;
-      z-index: 200;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-    .ac-list div {
-      padding: 12px 18px;
-      color: var(--white);
-      font-size: 17px;
-      font-family: Arial, sans-serif;
-      cursor: pointer;
-      transition: background 0.12s;
-    }
-    .ac-list div:hover,
-    .ac-list div.hi { background: #2a2a2a; }
-
-    .select-wrap { position: relative; max-width: 500px; }
-    .select-wrap::after {
-      content: "▾";
-      position: absolute;
-      right: 4px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 22px;
-      color: rgba(0,0,0,0.5);
-      pointer-events: none;
-    }
-
-    .session-select {
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid rgba(0,0,0,0.28);
-      font-size: clamp(18px, 2.8vw, 26px);
-      font-weight: 700;
-      color: var(--black);
-      padding: 8px 0 10px;
-      width: 100%;
-      outline: none;
-      font-family: Arial, sans-serif;
-      cursor: pointer;
-      appearance: none;
-      -webkit-appearance: none;
-      transition: border-color 0.2s;
-    }
-    .session-select:focus { border-bottom-color: var(--black); }
-    .session-select option { font-weight: 400; font-size: 18px; }
-
-    .cta-btn {
-      margin-top: 28px;
-      background: var(--black);
-      color: var(--white);
-      border: none;
-      padding: 14px 30px;
-      font-size: 16px;
-      font-weight: 700;
-      border-radius: 5px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-family: Arial, sans-serif;
-      letter-spacing: 1px;
-      transition: opacity 0.18s, transform 0.1s;
-      max-width: fit-content;
-    }
-    .cta-btn:hover  { opacity: 0.82; transform: translateY(-2px); }
-    .cta-btn:active { transform: translateY(0); }
-
-    .hint {
-      margin-top: 14px;
-      font-size: 12px;
-      color: rgba(0,0,0,0.38);
-      letter-spacing: 0.5px;
-    }
-    .hint strong { color: rgba(0,0,0,0.55); }
-
-    .swipe-hint {
-      margin-top: 10px;
-      font-size: 12px;
-      color: rgba(0,0,0,0.3);
-    }
-
-    .err {
-      color: #b03030;
-      font-size: 13px;
-      font-weight: 700;
-      margin-top: 8px;
-      min-height: 16px;
-    }
-
-    .success-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .success-tick {
-      width: 64px; height: 64px;
-      background: var(--black);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 30px;
-      color: var(--yellow);
-      margin-bottom: 22px;
-    }
-    .success-title {
-      font-size: clamp(32px, 5vw, 58px);
-      font-weight: 900;
-      color: var(--black);
-      margin-bottom: 10px;
-      line-height: 1.1;
-    }
-    .success-sub {
-      font-size: clamp(16px, 2vw, 20px);
-      color: rgba(0,0,0,0.55);
-      margin-bottom: 36px;
-      max-width: 480px;
-      line-height: 1.5;
-    }
-    .success-sub strong { color: var(--black); }
-
-    .next-btn {
-      background: transparent;
-      border: 3px solid var(--black);
-      color: var(--black);
-      padding: 13px 28px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 5px;
-      cursor: pointer;
-      font-family: Arial, sans-serif;
-      letter-spacing: 1px;
-      transition: all 0.18s;
-    }
-    .next-btn:hover { background: var(--black); color: var(--yellow); }
-
-    .countdown {
-      margin-top: 16px;
-      font-size: 12px;
-      color: rgba(0,0,0,0.38);
-    }
-
-    @media (max-height: 600px) {
-      .header { height: 50px; }
-      .progress-bar { top: 50px; }
-      .slide { padding: 68px 8vw 30px; }
-      .question { font-size: clamp(20px, 3.5vh, 32px); margin-bottom: 20px; }
-      .form-input { font-size: clamp(18px, 2.8vh, 24px); padding: 6px 0 8px; }
-      .cta-btn { margin-top: 18px; padding: 11px 24px; font-size: 14px; }
-      .hint, .swipe-hint { display: none; }
-      .success-tick { width: 50px; height: 50px; font-size: 24px; margin-bottom: 14px; }
-      .success-title { font-size: clamp(26px, 4vh, 40px); }
-      .success-sub { font-size: 15px; margin-bottom: 20px; }
-    }
-
-    @media (max-width: 480px) {
-      .slide { padding: 90px 20px 50px; }
-      .question { font-size: 26px; }
-      .form-input { font-size: 22px; }
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .bar-fill { transition: width 0.4s ease; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.8s linear infinite; }
   </style>
 </head>
-<body>
+<body class="bg-gray-50">
+<div id="root"></div>
 
-<header class="header">
-  <button class="back-btn hidden" id="backBtn" onclick="goBack()">
-    &#8592; <span>Back</span>
-  </button>
-  <img class="logo-img" src="logo.png" alt="Trash Gxng"
-       onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';">
-  <div class="logo-fallback" id="logoFallback">TRASH | G<span class="x">X</span>NG</div>
-</header>
+<script type="text/babel">
+const { useState, useEffect } = React;
 
-<div class="progress-bar" id="progressBar"></div>
-<div class="side-text">Welcome to the Gxng</div>
+// ═══════════════════════════════════════════════════════════════
+// STEP 1 — Paste your published Google Sheet CSV URL here
+// How: File → Share → Publish to web → Entire Document → CSV → Copy link
+// ═══════════════════════════════════════════════════════════════
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTNQNh4Pj3pbGBgw8HNvgWccHJJl9yPzSNKW9-0vpqGNP6XkWqkGL8XjVg-en7Gn5kE6DtGGrGppmY/pub?output=csv";
 
-<div class="slides" id="slidesContainer">
+// ═══════════════════════════════════════════════════════════════
+// STEP 2 — Paste the normal edit link to your Google Sheet here
+// (so the team can click straight to the sheet from the dashboard)
+// ═══════════════════════════════════════════════════════════════
+const SHEET_EDIT_URL = "https://docs.google.com/spreadsheets/d/1mrmZrkItT2FTcd3F-lOpq-gYObZmhJ1PIJEJQ25NK6Q/edit?gid=0#gid=0";
 
-  <div class="slide active" id="slide-0">
-    <div class="step-num">1 / 3</div>
-    <div class="question" id="q-first"></div>
-    <div class="input-wrap">
-      <input class="form-input" id="inp-first" type="text" placeholder="e.g. Marcus" autocomplete="off" spellcheck="false">
-      <div class="ac-list" id="ac-first"></div>
-    </div>
-    <button class="cta-btn" onclick="advance()">OK &nbsp;&#10003;</button>
-    <div class="hint">Press <strong>Enter &#8629;</strong> to continue</div>
-    <div class="swipe-hint">Swipe down to go back</div>
-    <div class="err" id="err-0"></div>
-  </div>
-
-  <div class="slide" id="slide-1">
-    <div class="step-num">2 / 3</div>
-    <div class="question" id="q-last"></div>
-    <div class="input-wrap">
-      <input class="form-input" id="inp-last" type="text" placeholder="e.g. Johnson" autocomplete="off" spellcheck="false">
-      <div class="ac-list" id="ac-last"></div>
-    </div>
-    <button class="cta-btn" onclick="advance()">OK &nbsp;&#10003;</button>
-    <div class="hint">Press <strong>Enter &#8629;</strong> to continue</div>
-    <div class="swipe-hint">Swipe down to go back</div>
-    <div class="err" id="err-1"></div>
-  </div>
-
-  <div class="slide" id="slide-2">
-    <div class="step-num">3 / 3</div>
-    <div class="question" id="q-session"></div>
-    <div class="select-wrap">
-      <select class="session-select" id="sel-session">
-        <option value="">Choose a session&#8230;</option>
-      </select>
-    </div>
-    <button class="cta-btn" onclick="submitForm()">Submit &nbsp;&#8594;</button>
-    <div class="hint">Press <strong>Enter &#8629;</strong> to submit</div>
-    <div class="swipe-hint">Swipe down to go back</div>
-    <div class="err" id="err-2"></div>
-  </div>
-
-  <div class="slide" id="slide-3">
-    <div class="success-wrap">
-      <div class="success-tick">&#10003;</div>
-      <div class="success-title">You're in!</div>
-      <div class="success-sub" id="success-sub"></div>
-      <button class="next-btn" onclick="restart()">Next person &#8594;</button>
-      <div class="countdown" id="countdown"></div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-const CONFIG = {
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxT6mgLWNrL839sGc1XAymvKd5tp8ajmSx6ColxjXIMo33T5szplZtz5sfH4q852tM/exec",
-  questions: {
-    firstName: "What's your first name?",
-    lastName:  "And your last name?",
-    session:   "Cool, what brings you here today? \uD83D\uDC40",
-  },
-  sessions: [
-    "IYCP: Identify You Creative Programme",
-    "Open Session (Gaming/Chillin'/etc.)",
-    "Movie Night",
-    "Guest Facilitator",
-    "Rental of Office Space",
-    "Visitor",
-  ],
-  autoResetSeconds: 8,
+// ═══════════════════════════════════════════════════════════════
+// TARGETS — only edit when benchmarks change
+// ═══════════════════════════════════════════════════════════════
+const TARGETS = {
+  chloe_igReel:   1,
+  chloe_ttVideo:  1,
+  chloe_stories:  3,
+  julia_igReel:   1,
+  julia_ttVideos: 2,
+  julia_outreach: 7,
+  julia_stories:  3,
+  marion_igPosts: 3,
+  marion_stories: 3,
+  ife_blogs:      1,
 };
 
-let currentSlide = 0;
-const TOTAL_STEPS = 3;
-let knownNames = { first: [], last: [] };
-let countdownTimer = null;
+// ═══════════════════════════════════════════════════════════════
+// RAG helpers
+// ═══════════════════════════════════════════════════════════════
+const RAG = {
+  green: { bg: "bg-green-100", text: "text-green-800", bar: "bg-green-500",  label: "On Track"  },
+  amber: { bg: "bg-yellow-100",text: "text-yellow-800",bar: "bg-yellow-400", label: "Close"     },
+  red:   { bg: "bg-red-100",   text: "text-red-800",   bar: "bg-red-500",    label: "Off Track" },
+  grey:  { bg: "bg-gray-100",  text: "text-gray-500",  bar: "bg-gray-200",   label: "N/A"       },
+};
 
-// ── iOS viewport / keyboard fix ─────────────────────────────────────
-function fixViewport() {
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--vh', vh + 'px');
-  document.getElementById('slidesContainer').style.height = vh + 'px';
-  window.scrollTo(0, 0);
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
+function getRag(p) {
+  if (p === null || p === undefined) return "grey";
+  if (p >= 85) return "green";
+  if (p >= 60) return "amber";
+  return "red";
+}
+function calcPct(actual, target) {
+  if (!target || actual === null || actual === undefined) return null;
+  return Math.min(Math.round((actual / target) * 100), 150);
 }
 
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', fixViewport);
-  window.visualViewport.addEventListener('scroll', () => { window.scrollTo(0, 0); });
+// ═══════════════════════════════════════════════════════════════
+// CSV parser
+// Sheet has 2 header rows (section labels + column names) then data.
+// We parse by column POSITION so friendly display names can be used.
+// Column order (A=0 … U=20):
+//  0  Week
+//  1  IG Followers       2  IG Followers Prev
+//  3  TikTok Followers   4  TikTok Followers Prev
+//  5  Chloe: Approvals   6  IG Reel   7  TikTok   8  DMs   9  Stories Days
+// 10  Julia:  IG Reel   11  TikToks  12  Outreach 13  Update Sent  14  Stories Days
+// 15  Marion: IG Posts  16  Newsletter 17 Stories  18  Calendar
+// 19  Ife:    Blogs     20  Press Release
+// ═══════════════════════════════════════════════════════════════
+function toNum(v) {
+  if (v === '' || v === undefined || v === null) return 0;
+  return Number(v) || 0;
 }
-window.addEventListener('resize', fixViewport);
-document.addEventListener('DOMContentLoaded', fixViewport);
-
-document.addEventListener('focusout', () => {
-  setTimeout(fixViewport, 120);
-  setTimeout(fixViewport, 400);
-});
-
-// ── Touch / swipe tracking ──────────────────────────────────────────
-// Swipe DOWN (finger moves down) = go BACK to previous question
-// Swipe UP  (finger moves up)    = go FORWARD to next question
-let touchStartY = 0;
-let touchStartX = 0;
-let touchStartTime = 0;
-
-document.addEventListener("touchstart", e => {
-  touchStartY    = e.touches[0].clientY;
-  touchStartX    = e.touches[0].clientX;
-  touchStartTime = Date.now();
-}, { passive: true });
-
-document.addEventListener("touchend", e => {
-  const dy      = e.changedTouches[0].clientY - touchStartY; // positive = finger moved DOWN
-  const dx      = Math.abs(e.changedTouches[0].clientX - touchStartX);
-  const elapsed = Date.now() - touchStartTime;
-
-  // Must be: mostly vertical, at least 55px, completed within 600ms
-  if (Math.abs(dy) < 55 || dx > 60 || elapsed > 600) return;
-
-  if (dy > 0) {
-    // Finger moved DOWN → go back
-    if (currentSlide > 0 && currentSlide < TOTAL_STEPS) goBack();
-  } else {
-    // Finger moved UP → go forward
-    if (currentSlide < TOTAL_STEPS - 1) advance();
-    else if (currentSlide === TOTAL_STEPS - 1) submitForm();
-  }
-}, { passive: true });
-
-// ── Boot ────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  applyConfig();
-  fetchNamesFromSheet();
-  bindKeyboard();
-  updateBackBtn();
-});
-
-function applyConfig() {
-  document.getElementById("q-first").textContent   = CONFIG.questions.firstName;
-  document.getElementById("q-last").textContent    = CONFIG.questions.lastName;
-  document.getElementById("q-session").textContent = CONFIG.questions.session;
-  const sel = document.getElementById("sel-session");
-  CONFIG.sessions.forEach(name => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = name;
-    sel.appendChild(opt);
-  });
+function toBool(v) {
+  if (!v) return false;
+  return ['true', 'yes', '1', 'y'].includes(String(v).toLowerCase().trim());
 }
 
-async function fetchNamesFromSheet() {
-  try {
-    const res  = await fetch(CONFIG.SCRIPT_URL + "?action=getNames");
-    const json = await res.json();
-    if (json.first) knownNames.first = [...new Set(json.first)];
-    if (json.last)  knownNames.last  = [...new Set(json.last)];
-  } catch (e) {
-    console.warn("[Attendance] Could not load names:", e.message);
-  }
-  bindAutocomplete("inp-first", "ac-first", knownNames.first);
-  bindAutocomplete("inp-last",  "ac-last",  knownNames.last);
-}
-
-function bindAutocomplete(inputId, listId, pool) {
-  const inp  = document.getElementById(inputId);
-  const list = document.getElementById(listId);
-  let hiIdx  = -1;
-
-  function render(val) {
-    list.innerHTML = "";
-    hiIdx = -1;
-    if (!val) return;
-    pool.filter(n => n.toLowerCase().startsWith(val.toLowerCase()))
-        .slice(0, 6)
-        .forEach(name => {
-          const d = document.createElement("div");
-          d.textContent = name;
-          d.onmousedown = e => { e.preventDefault(); inp.value = name; list.innerHTML = ""; };
-          d.ontouchend = e => { e.preventDefault(); inp.value = name; list.innerHTML = ""; inp.blur(); };
-          list.appendChild(d);
-        });
-  }
-
-  inp.addEventListener("input",  () => render(inp.value.trim()));
-  inp.addEventListener("blur",   () => setTimeout(() => { list.innerHTML = ""; hiIdx = -1; }, 200));
-  inp.addEventListener("keydown", e => {
-    const items = list.querySelectorAll("div");
-    if      (e.key === "ArrowDown")  { e.preventDefault(); hiIdx = Math.min(hiIdx+1, items.length-1); }
-    else if (e.key === "ArrowUp")    { e.preventDefault(); hiIdx = Math.max(hiIdx-1, -1); }
-    else if (e.key === "Escape")     { list.innerHTML = ""; hiIdx = -1; return; }
-    else return;
-    items.forEach((el,i) => el.classList.toggle("hi", i === hiIdx));
-    if (hiIdx >= 0 && items[hiIdx]) inp.value = items[hiIdx].textContent;
-  });
-}
-
-function bindKeyboard() {
-  document.addEventListener("keydown", e => {
-    if (e.key !== "Enter") return;
-    const hasHi = document.querySelector("#ac-first .hi") || document.querySelector("#ac-last .hi");
-    if (hasHi) return;
-    if (currentSlide < TOTAL_STEPS - 1) advance();
-    else if (currentSlide === TOTAL_STEPS - 1) submitForm();
-  });
-}
-
-function updateBackBtn() {
-  const btn = document.getElementById("backBtn");
-  if (currentSlide > 0 && currentSlide < TOTAL_STEPS) {
-    btn.classList.remove("hidden");
-  } else {
-    btn.classList.add("hidden");
-  }
-}
-
-function goBack() {
-  if (currentSlide <= 0) return;
-  moveTo(currentSlide - 1);
-  const errEl = document.getElementById("err-" + (currentSlide));
-  if (errEl) errEl.textContent = "";
-}
-
-function moveTo(idx) {
-  document.querySelectorAll(".slide").forEach((el, i) => {
-    el.classList.remove("active", "past");
-    if (i < idx)       el.classList.add("past");
-    else if (i === idx) el.classList.add("active");
-  });
-  currentSlide = idx;
-  document.getElementById("progressBar").style.width = Math.round((idx / TOTAL_STEPS) * 100) + "%";
-  updateBackBtn();
-  const active = document.getElementById("slide-" + idx);
-  if (active) {
-    const f = active.querySelector("input, select");
-    if (f) setTimeout(() => f.focus(), 480);
-  }
-}
-
-// ── Shake a slide to signal a validation error ───────────────────────
-function triggerShake(slideIdx) {
-  const el = document.getElementById("slide-" + slideIdx);
-  if (!el) return;
-  el.classList.remove("shake");
-  void el.offsetWidth;
-  el.classList.add("shake");
-  el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
-}
-
-// ── Advance (with validation) ────────────────────────────────────────
-function advance() {
-  if (currentSlide === 0) {
-    const val = document.getElementById("inp-first").value.trim();
-    if (!val) {
-      document.getElementById("err-0").textContent = "This question must be completed.";
-      triggerShake(0);
-      return;
+// Full CSV parser — handles quoted cells that contain commas or newlines.
+// Google Sheets wraps multi-line header cells in quotes, which breaks a
+// simple split('\n') approach. This parses character-by-character instead.
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  const t = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (t[i + 1] === '"') { cur += '"'; i++; } // escaped quote ""
+        else { inQ = false; }
+      } else {
+        cur += ch; // newlines inside quotes become part of the cell value
+      }
+    } else {
+      if      (ch === '"') { inQ = true; }
+      else if (ch === ',') { row.push(cur.trim()); cur = ''; }
+      else if (ch === '\n') { row.push(cur.trim()); rows.push(row); row = []; cur = ''; }
+      else { cur += ch; }
     }
-    document.getElementById("err-0").textContent = "";
-    if (!knownNames.first.includes(val)) knownNames.first.push(val);
   }
-  if (currentSlide === 1) {
-    const val = document.getElementById("inp-last").value.trim();
-    if (!val) {
-      document.getElementById("err-1").textContent = "This question must be completed.";
-      triggerShake(1);
-      return;
-    }
-    document.getElementById("err-1").textContent = "";
-    if (!knownNames.last.includes(val)) knownNames.last.push(val);
-  }
-  moveTo(currentSlide + 1);
+  // flush last cell/row
+  row.push(cur.trim());
+  if (row.some(c => c !== '')) rows.push(row);
+  return rows;
 }
 
-async function submitForm() {
-  const session = document.getElementById("sel-session").value;
-  if (!session) {
-    document.getElementById("err-2").textContent = "This question must be completed.";
-    triggerShake(2);
-    return;
+function loadSheetData(text) {
+  const rows = parseCSV(text);
+  // rows[0] = section colour headers, rows[1] = column name headers — skip both
+  const dataRows = rows.slice(2).filter(r => r[0]?.trim());
+  const weeks = [], data = {};
+  dataRows.forEach(c => {
+    const wk = c[0]?.trim();
+    if (!wk) return;
+    weeks.push(wk);
+    data[wk] = {
+      igFollowers:    toNum(c[1]),  igFollowersPrev: toNum(c[2]),
+      ttFollowers:    toNum(c[3]),  ttFollowersPrev: toNum(c[4]),
+      chloe:  { approvalsOnTime: toBool(c[5]), igReel: toNum(c[6]), ttVideo: toNum(c[7]), dmResponse: toBool(c[8]), storiesDays: toNum(c[9]) },
+      julia:  { igReel: toNum(c[10]), ttVideos: toNum(c[11]), outreach: toNum(c[12]), updateSent: toBool(c[13]), storiesDays: toNum(c[14]) },
+      marion: { igPosts: toNum(c[15]), newsletter: toBool(c[16]), storiesDays: toNum(c[17]), calendarDone: toBool(c[18]) },
+      ife:    { blogs: toNum(c[19]), pressDone: toBool(c[20]) },
+    };
+  });
+  return { weeks, data };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Components
+// ═══════════════════════════════════════════════════════════════
+
+function FollowerCard({ platform, emoji, followers, prev }) {
+  const diff = followers - prev;
+  const pctChg = prev > 0 ? ((diff / prev) * 100).toFixed(1) : 0;
+  const up = diff >= 0;
+  return (
+    <div className="bg-black rounded-2xl px-5 py-4 flex items-center justify-between flex-1">
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-base">{emoji}</span>
+          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">{platform}</span>
+        </div>
+        <div className="text-white font-black text-2xl leading-none">{followers.toLocaleString()}</div>
+        <div className="text-gray-500 text-xs mt-1">followers</div>
+      </div>
+      <div className={`text-right ${up ? "text-green-400" : "text-red-400"}`}>
+        <div className="text-xl font-black leading-none">{up ? "+" : ""}{diff}</div>
+        <div className="text-xs font-semibold mt-0.5">{up ? "▲" : "▼"} {Math.abs(pctChg)}% this week</div>
+      </div>
+    </div>
+  );
+}
+
+function KpiRow({ label, actual, target, unit = "", yesNo = false, val = null, monthly = false }) {
+  let p, display;
+  if (yesNo) {
+    p = val ? 100 : 0;
+    display = val ? "✓  Done" : "✗  Not done";
+  } else {
+    p = calcPct(actual, target);
+    display = actual !== null && actual !== undefined ? `${actual}${unit}  /  ${target}${unit}` : "— not entered";
   }
-  document.getElementById("err-2").textContent = "";
-
-  const firstName = document.getElementById("inp-first").value.trim();
-  const lastName  = document.getElementById("inp-last").value.trim();
-  const now       = new Date();
-  const date      = now.toLocaleDateString("en-GB");
-  const time      = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-
-  document.getElementById("success-sub").innerHTML =
-    "<strong style='font-size:1.2em;color:#111'>" + firstName + " " + lastName + "</strong><br>" +
-    "<span style='font-size:0.9em'>" + session + " &nbsp;&middot;&nbsp; " + date + " at " + time + "</span>";
-
-  moveTo(3);
-  document.getElementById("progressBar").style.width = "100%";
-  startCountdown();
-
-  try {
-    await fetch(CONFIG.SCRIPT_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "text/plain" },
-      body:    JSON.stringify({ firstName, lastName, session, date, time }),
-    });
-  } catch (err) {
-    console.error("[Attendance] Sheet sync failed:", err.message);
-  }
+  const key = getRag(p);
+  const c = RAG[key];
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-sm text-gray-700">{label}</span>
+          {monthly && <span className="text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">monthly</span>}
+        </div>
+        <div className={`text-xs font-semibold mt-0.5 ${c.text}`}>{display}</div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="w-16 h-1.5 rounded-full bg-gray-100">
+          <div className={`h-1.5 rounded-full bar-fill ${c.bar}`} style={{ width: `${Math.min(p ?? 0, 100)}%` }} />
+        </div>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${c.bg} ${c.text}`}>{c.label}</span>
+      </div>
+    </div>
+  );
 }
 
-function startCountdown() {
-  const secs = CONFIG.autoResetSeconds;
-  const el   = document.getElementById("countdown");
-  if (!secs || secs <= 0) { el.textContent = ""; return; }
-  let remaining = secs;
-  el.textContent = "Resetting in " + remaining + "s\u2026";
-  clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) { clearInterval(countdownTimer); restart(); }
-    else el.textContent = "Resetting in " + remaining + "s\u2026";
-  }, 1000);
+function MemberCard({ name, role, hours, initials, kpis }) {
+  const [open, setOpen] = useState(true);
+  const rags = kpis.map(k => {
+    if (k.yesNo) return k.val ? "green" : "red";
+    return getRag(calcPct(k.actual, k.target));
+  });
+  const onTrack = rags.filter(r => r === "green").length;
+  const overall = rags.includes("red") ? "red" : rags.includes("amber") ? "amber" : "green";
+  const c = RAG[overall];
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full bg-black px-5 py-4 flex items-center justify-between gap-3 text-left hover:bg-gray-900 transition-colors">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-yellow-400 flex items-center justify-center text-black font-black text-sm shrink-0">{initials}</div>
+          <div>
+            <div className="text-white font-bold text-sm leading-tight">{name}</div>
+            <div className="text-gray-400 text-xs mt-0.5">{role} · {hours}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-xs font-bold px-2 py-1 rounded-full ${c.bg} ${c.text}`}>{onTrack}/{rags.length} on track</span>
+          <span className="text-gray-600 text-sm">{open ? "▲" : "▼"}</span>
+        </div>
+      </button>
+      {open && (
+        <div className="px-5 py-2">
+          {kpis.map((k, i) => <KpiRow key={i} {...k} />)}
+        </div>
+      )}
+    </div>
+  );
 }
 
-function restart() {
-  clearInterval(countdownTimer);
-  document.getElementById("inp-first").value    = "";
-  document.getElementById("inp-last").value     = "";
-  document.getElementById("sel-session").value  = "";
-  document.getElementById("ac-first").innerHTML = "";
-  document.getElementById("ac-last").innerHTML  = "";
-  document.getElementById("countdown").textContent = "";
-  moveTo(0);
+function WeekHealth({ data }) {
+  const checks = [
+    data.chloe.approvalsOnTime,
+    data.chloe.igReel      >= TARGETS.chloe_igReel,
+    data.chloe.ttVideo     >= TARGETS.chloe_ttVideo,
+    data.chloe.dmResponse,
+    data.chloe.storiesDays >= TARGETS.chloe_stories,
+    data.julia.igReel      >= TARGETS.julia_igReel,
+    data.julia.ttVideos    >= TARGETS.julia_ttVideos,
+    data.julia.updateSent,
+    data.julia.storiesDays >= TARGETS.julia_stories,
+    data.marion.igPosts     >= TARGETS.marion_igPosts,
+    data.marion.newsletter,
+    data.marion.storiesDays >= TARGETS.marion_stories,
+    data.ife.blogs          >= TARGETS.ife_blogs,
+  ];
+  const met = checks.filter(Boolean).length;
+  const total = checks.length;
+  const pct = Math.round((met / total) * 100);
+  const key = pct >= 85 ? "green" : pct >= 60 ? "amber" : "red";
+  const c = RAG[key];
+  const fill = Math.round((pct / 100) * 100);
+  return (
+    <div className={`rounded-2xl px-5 py-4 flex items-center justify-between ${c.bg}`}>
+      <div>
+        <div className={`text-xs font-bold uppercase tracking-wider ${c.text}`}>Week Health</div>
+        <div className={`text-3xl font-black mt-1 ${c.text}`}>{pct}%</div>
+        <div className={`text-xs mt-1 ${c.text} opacity-80`}>{met} of {total} KPIs met this week</div>
+      </div>
+      <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3.5"/>
+        <circle cx="18" cy="18" r="15.9" fill="none" strokeWidth="3.5"
+          strokeDasharray={`${fill} ${100 - fill}`} strokeLinecap="round"
+          className={key === "green" ? "stroke-green-600" : key === "amber" ? "stroke-yellow-500" : "stroke-red-500"}
+        />
+      </svg>
+    </div>
+  );
 }
+
+function HowToUpdate() {
+  const connected = SHEET_EDIT_URL && SHEET_CSV_URL;
+  return (
+    <div className="space-y-4 max-w-xl">
+
+      {/* Big sheet button */}
+      {connected ? (
+        <a href={SHEET_EDIT_URL} target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-between bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors text-white rounded-2xl px-6 py-5 no-underline">
+          <div>
+            <div className="font-black text-base leading-tight">📊  Open Team Stats Sheet</div>
+            <div className="text-green-200 text-xs mt-1">Fill in this week's numbers → dashboard updates automatically</div>
+          </div>
+          <span className="text-2xl ml-4">→</span>
+        </a>
+      ) : (
+        <div className="bg-yellow-50 border-2 border-dashed border-yellow-400 rounded-2xl px-6 py-5 text-center space-y-1">
+          <div className="text-2xl">📊</div>
+          <div className="font-bold text-yellow-800 text-sm">Google Sheet not connected yet</div>
+          <div className="text-yellow-600 text-xs">Follow the one-time setup steps below</div>
+        </div>
+      )}
+
+      {/* How it works */}
+      <div className="bg-black text-white rounded-2xl p-5 space-y-4">
+        <p className="text-yellow-400 font-black text-sm uppercase tracking-widest">How it works</p>
+        {[
+          ["📋", "Team fills the Google Sheet", "Each week the team opens the shared Google Sheet and fills in their numbers — no code, no logins."],
+          ["⚡", "Dashboard updates automatically", "The dashboard reads directly from the sheet. Refresh the page after the team has filled it in and numbers update instantly."],
+          ["🔒", "Only you control the dashboard", "Only your GitHub account can change targets or settings. The team only touches the sheet."],
+        ].map(([icon, title, desc]) => (
+          <div key={title} className="flex gap-3 text-sm">
+            <span className="text-base shrink-0">{icon}</span>
+            <div>
+              <span className="text-yellow-400 font-semibold">{title}: </span>
+              <span className="text-gray-300">{desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* One-time setup */}
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3">
+        <p className="font-bold text-sm text-gray-800">One-time setup (do this once)</p>
+        <ol className="text-sm text-gray-600 space-y-3 list-decimal list-inside">
+          <li>Open your Google Sheet, go to <strong>Extensions → Apps Script</strong>.</li>
+          <li>Paste the setup script (provided by your admin) and click <strong>Run → setupKPITracker</strong>. This auto-formats the whole sheet with colours, dropdowns, and pre-filled week rows.</li>
+          <li>Share the sheet with your team (Editor access).</li>
+          <li>The sheet is now ready — each team member fills in their coloured section each week.</li>
+        </ol>
+      </div>
+
+      {/* Weekly routine */}
+      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3">
+        <p className="font-bold text-sm text-gray-800">Every week (takes ~2 mins per person)</p>
+        <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <li>Open the Google Sheet using the button above.</li>
+          <li>Find your name / coloured section in the next blank week row.</li>
+          <li>Fill in your numbers — TRUE/FALSE columns have a dropdown, number columns just type the count.</li>
+          <li>Done — the dashboard updates when Tayo refreshes the page.</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Main App
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  const [weeks, setWeeks]   = useState([]);
+  const [data, setData]     = useState({});
+  const [week, setWeek]     = useState(null);
+  const [tab, setTab]       = useState("team");
+  const [status, setStatus] = useState("loading");
+
+  useEffect(() => {
+    if (!SHEET_CSV_URL) { setStatus("nourl"); return; }
+    fetch(SHEET_CSV_URL)
+      .then(r => { if (!r.ok) throw new Error("fetch"); return r.text(); })
+      .then(text => {
+        const { weeks: newWeeks, data: newData } = loadSheetData(text);
+        if (!newWeeks.length) throw new Error("empty");
+        setWeeks(newWeeks);
+        setData(newData);
+        // Default to the most recent week that is on or before today.
+        // Week labels are "DD Mon" e.g. "14 Apr". Parse and compare to today.
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const today = new Date(); today.setHours(0,0,0,0);
+        const toDate = lbl => {
+          const p = lbl.trim().split(' ');
+          if (p.length !== 2) return null;
+          const yr = today.getFullYear();
+          const d = new Date(yr, MONTHS.indexOf(p[1]), parseInt(p[0], 10));
+          // If >6 months in the future, assume it was last year
+          if (d - today > 183 * 86400000) d.setFullYear(yr - 1);
+          return d;
+        };
+        let best = newWeeks[0];
+        for (const wk of newWeeks) {
+          const d = toDate(wk);
+          if (d && d <= today) best = wk;
+        }
+        setWeek(best);
+        setStatus("ok");
+      })
+      .catch(e => setStatus(e.message === "empty" ? "empty" : "error"));
+  }, []);
+
+  const d = week ? data[week] : null;
+  const T = TARGETS;
+
+  const chloeKPIs = d ? [
+    { label: "All content approvals within 24 hrs",      yesNo: true, val: d.chloe.approvalsOnTime },
+    { label: "Instagram Reel published",                  actual: d.chloe.igReel,      target: T.chloe_igReel,  unit: " reel"  },
+    { label: "TikTok video published",                    actual: d.chloe.ttVideo,     target: T.chloe_ttVideo, unit: " video" },
+    { label: "DMs & comments responded to within 4 hrs", yesNo: true, val: d.chloe.dmResponse },
+    { label: "Instagram Stories days posted",             actual: d.chloe.storiesDays, target: T.chloe_stories, unit: " days"  },
+  ] : [];
+  const juliaKPIs = d ? [
+    { label: "Instagram Reel published",      actual: d.julia.igReel,      target: T.julia_igReel,   unit: " reel"      },
+    { label: "TikTok videos published",       actual: d.julia.ttVideos,    target: T.julia_ttVideos, unit: " videos"    },
+    { label: "Influencer / blogger outreach", actual: d.julia.outreach,    target: T.julia_outreach, unit: " contacts", monthly: true },
+    { label: "Weekly update sent to Chloe",   yesNo: true, val: d.julia.updateSent },
+    { label: "Instagram Stories days posted", actual: d.julia.storiesDays, target: T.julia_stories,  unit: " days"      },
+  ] : [];
+  const marionKPIs = d ? [
+    { label: "Instagram feed posts published",  actual: d.marion.igPosts,     target: T.marion_igPosts, unit: " posts" },
+    { label: "Email newsletter sent this week", yesNo: true, val: d.marion.newsletter },
+    { label: "Instagram Stories posted",        actual: d.marion.storiesDays, target: T.marion_stories, unit: " days"  },
+    { label: "Content calendar published",      yesNo: true, val: d.marion.calendarDone, monthly: true },
+  ] : [];
+  const ifeKPIs = d ? [
+    { label: "Blog / website post published", actual: d.ife.blogs, target: T.ife_blogs, unit: " posts", monthly: true },
+    { label: "Press release drafted",         yesNo: true, val: d.ife.pressDone, monthly: true },
+  ] : [];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+
+      {/* Nav */}
+      <div className="bg-black px-5 py-4 flex items-center justify-between">
+        <div>
+          <span className="text-yellow-400 font-black text-lg tracking-tight">TRASH | G✕NG</span>
+          <span className="text-gray-500 text-xs ml-3 hidden sm:inline">Marketing KPI Tracker</span>
+        </div>
+        {weeks.length > 0 && (
+          <div className="flex items-center gap-1 bg-gray-800 rounded-lg px-2 py-1.5">
+            <button onClick={() => { const i = weeks.indexOf(week); if (i > 0) setWeek(weeks[i-1]); }}
+              className="text-gray-400 hover:text-yellow-400 px-2 text-lg font-bold leading-none transition-colors">‹</button>
+            <span className="text-white text-sm font-medium w-24 text-center">w/c {week}</span>
+            <button onClick={() => { const i = weeks.indexOf(week); if (i < weeks.length-1) setWeek(weeks[i+1]); }}
+              className="text-gray-400 hover:text-yellow-400 px-2 text-lg font-bold leading-none transition-colors">›</button>
+          </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200 px-5">
+        <div className="flex gap-5">
+          {[["team","Team Output"],["howto","How to Update"]].map(([id, label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              className={`py-3 text-sm font-bold border-b-2 transition-colors ${tab === id ? "border-yellow-400 text-black" : "border-transparent text-gray-400 hover:text-gray-700"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+
+        {tab === "team" && (
+          <>
+            {status === "loading" && (
+              <div className="flex flex-col items-center justify-center py-24 space-y-4 text-gray-400">
+                <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full spin" />
+                <p className="text-sm">Loading from Google Sheets…</p>
+              </div>
+            )}
+            {status === "nourl" && (
+              <div className="bg-yellow-50 border-2 border-dashed border-yellow-400 rounded-2xl p-8 text-center space-y-2">
+                <div className="text-3xl">📊</div>
+                <div className="font-bold text-yellow-800">Google Sheet not connected</div>
+                <div className="text-yellow-600 text-sm">Go to the <strong>How to Update</strong> tab for setup instructions.</div>
+              </div>
+            )}
+            {status === "error" && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center space-y-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="font-bold text-red-800">Couldn't connect to Google Sheet</div>
+                <div className="text-red-600 text-sm">The sheet may not be published yet. Go to <strong>File → Share → Publish to web</strong> in your sheet and make sure it's published as CSV.</div>
+                <a href={SHEET_EDIT_URL} target="_blank" rel="noopener noreferrer"
+                  className="inline-block mt-1 bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+                  Open Google Sheet →
+                </a>
+              </div>
+            )}
+            {status === "empty" && (
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 text-center space-y-3">
+                <div className="text-3xl">📋</div>
+                <div className="font-bold text-yellow-800">Sheet is connected but has no data yet</div>
+                <div className="text-yellow-700 text-sm">Add at least one week of data to your Google Sheet (Row 2 onwards) and refresh this page.</div>
+                <a href={SHEET_EDIT_URL} target="_blank" rel="noopener noreferrer"
+                  className="inline-block mt-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+                  Open Google Sheet →
+                </a>
+              </div>
+            )}
+            {status === "ok" && d && (
+              <>
+                <div className="flex gap-3">
+                  <FollowerCard platform="Instagram" emoji="📸" followers={d.igFollowers} prev={d.igFollowersPrev} />
+                  <FollowerCard platform="TikTok"    emoji="🎵" followers={d.ttFollowers} prev={d.ttFollowersPrev} />
+                </div>
+                <WeekHealth data={d} />
+                <MemberCard name="Chloe Fernandes-Mendes" role="Marketing Lead"             hours="15 hrs/wk" initials="CF" kpis={chloeKPIs} />
+                <MemberCard name="Julia Kumbu"             role="Community & Culture Intern" hours="18 hrs/wk" initials="JK" kpis={juliaKPIs} />
+                <MemberCard name="Marion Acheampong"       role="Community & Culture Intern" hours="12 hrs/wk" initials="MA" kpis={marionKPIs} />
+                <MemberCard name="Ife Segun-Ojo"           role="Community & Culture Intern" hours="4 hrs/wk"  initials="IS" kpis={ifeKPIs} />
+                <div className="flex flex-wrap gap-4 justify-center pt-1 pb-4">
+                  {["green","amber","red"].map(k => (
+                    <div key={k} className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <div className={`w-2 h-2 rounded-full ${RAG[k].bar}`} />
+                      {RAG[k].label}
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <span className="bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 text-xs">monthly</span>
+                    Monthly KPI
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {tab === "howto" && <HowToUpdate />}
+      </div>
+
+      <div className="text-center text-xs text-gray-400 pb-8 mt-4">
+        Trash Gxng Academy CIC · Marketing KPI Tracker
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
 </html>
