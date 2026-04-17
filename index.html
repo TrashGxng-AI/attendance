@@ -96,7 +96,7 @@
       z-index: 99;
     }
 
-    .slides { position: relative; height: 100vh; width: 100%; }
+    .slides { position: relative; height: 100vh; height: var(--vh, 100vh); width: 100%; }
 
     .slide {
       position: absolute;
@@ -112,6 +112,18 @@
     }
     .slide.active  { transform: translateY(0);    opacity: 1; pointer-events: all; }
     .slide.past    { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+    /* ── Shake animation (validation fail) ── */
+    @keyframes shake {
+      0%,100% { margin-left: 0; }
+      15%     { margin-left: -10px; }
+      30%     { margin-left:  10px; }
+      45%     { margin-left:  -7px; }
+      60%     { margin-left:   7px; }
+      75%     { margin-left:  -4px; }
+      90%     { margin-left:   4px; }
+    }
+    .slide.shake { animation: shake 0.42s ease; }
 
     .step-num {
       font-size: 12px;
@@ -344,7 +356,7 @@
     </div>
     <button class="cta-btn" onclick="advance()">OK &nbsp;&#10003;</button>
     <div class="hint">Press <strong>Enter &#8629;</strong> to continue</div>
-    <div class="swipe-hint">Swipe up to go back</div>
+    <div class="swipe-hint">Swipe down to go back</div>
     <div class="err" id="err-0"></div>
   </div>
 
@@ -357,7 +369,7 @@
     </div>
     <button class="cta-btn" onclick="advance()">OK &nbsp;&#10003;</button>
     <div class="hint">Press <strong>Enter &#8629;</strong> to continue</div>
-    <div class="swipe-hint">Swipe up to go back</div>
+    <div class="swipe-hint">Swipe down to go back</div>
     <div class="err" id="err-1"></div>
   </div>
 
@@ -371,7 +383,7 @@
     </div>
     <button class="cta-btn" onclick="submitForm()">Submit &nbsp;&#8594;</button>
     <div class="hint">Press <strong>Enter &#8629;</strong> to submit</div>
-    <div class="swipe-hint">Swipe up to go back</div>
+    <div class="swipe-hint">Swipe down to go back</div>
     <div class="err" id="err-2"></div>
   </div>
 
@@ -410,22 +422,61 @@ let currentSlide = 0;
 const TOTAL_STEPS = 3;
 let knownNames = { first: [], last: [] };
 let countdownTimer = null;
+
+// ── iOS viewport / keyboard fix ─────────────────────────────────────
+function fixViewport() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', vh + 'px');
+  document.getElementById('slidesContainer').style.height = vh + 'px';
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fixViewport);
+  window.visualViewport.addEventListener('scroll', () => { window.scrollTo(0, 0); });
+}
+window.addEventListener('resize', fixViewport);
+document.addEventListener('DOMContentLoaded', fixViewport);
+
+document.addEventListener('focusout', () => {
+  setTimeout(fixViewport, 120);
+  setTimeout(fixViewport, 400);
+});
+
+// ── Touch / swipe tracking ──────────────────────────────────────────
+// Swipe DOWN (finger moves down) = go BACK to previous question
+// Swipe UP  (finger moves up)    = go FORWARD to next question
 let touchStartY = 0;
 let touchStartX = 0;
+let touchStartTime = 0;
 
 document.addEventListener("touchstart", e => {
-  touchStartY = e.touches[0].clientY;
-  touchStartX = e.touches[0].clientX;
+  touchStartY    = e.touches[0].clientY;
+  touchStartX    = e.touches[0].clientX;
+  touchStartTime = Date.now();
 }, { passive: true });
 
 document.addEventListener("touchend", e => {
-  const dy = touchStartY - e.changedTouches[0].clientY;
-  const dx = Math.abs(touchStartX - e.changedTouches[0].clientX);
-  if (dy > 60 && dx < 60 && currentSlide > 0 && currentSlide < TOTAL_STEPS) {
-    goBack();
+  const dy      = e.changedTouches[0].clientY - touchStartY; // positive = finger moved DOWN
+  const dx      = Math.abs(e.changedTouches[0].clientX - touchStartX);
+  const elapsed = Date.now() - touchStartTime;
+
+  // Must be: mostly vertical, at least 55px, completed within 600ms
+  if (Math.abs(dy) < 55 || dx > 60 || elapsed > 600) return;
+
+  if (dy > 0) {
+    // Finger moved DOWN → go back
+    if (currentSlide > 0 && currentSlide < TOTAL_STEPS) goBack();
+  } else {
+    // Finger moved UP → go forward
+    if (currentSlide < TOTAL_STEPS - 1) advance();
+    else if (currentSlide === TOTAL_STEPS - 1) submitForm();
   }
 }, { passive: true });
 
+// ── Boot ────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   applyConfig();
   fetchNamesFromSheet();
@@ -533,16 +584,35 @@ function moveTo(idx) {
   }
 }
 
+// ── Shake a slide to signal a validation error ───────────────────────
+function triggerShake(slideIdx) {
+  const el = document.getElementById("slide-" + slideIdx);
+  if (!el) return;
+  el.classList.remove("shake");
+  void el.offsetWidth;
+  el.classList.add("shake");
+  el.addEventListener("animationend", () => el.classList.remove("shake"), { once: true });
+}
+
+// ── Advance (with validation) ────────────────────────────────────────
 function advance() {
   if (currentSlide === 0) {
     const val = document.getElementById("inp-first").value.trim();
-    if (!val) { document.getElementById("err-0").textContent = "Please enter your first name."; return; }
+    if (!val) {
+      document.getElementById("err-0").textContent = "This question must be completed.";
+      triggerShake(0);
+      return;
+    }
     document.getElementById("err-0").textContent = "";
     if (!knownNames.first.includes(val)) knownNames.first.push(val);
   }
   if (currentSlide === 1) {
     const val = document.getElementById("inp-last").value.trim();
-    if (!val) { document.getElementById("err-1").textContent = "Please enter your last name."; return; }
+    if (!val) {
+      document.getElementById("err-1").textContent = "This question must be completed.";
+      triggerShake(1);
+      return;
+    }
     document.getElementById("err-1").textContent = "";
     if (!knownNames.last.includes(val)) knownNames.last.push(val);
   }
@@ -551,7 +621,11 @@ function advance() {
 
 async function submitForm() {
   const session = document.getElementById("sel-session").value;
-  if (!session) { document.getElementById("err-2").textContent = "Please choose a session."; return; }
+  if (!session) {
+    document.getElementById("err-2").textContent = "This question must be completed.";
+    triggerShake(2);
+    return;
+  }
   document.getElementById("err-2").textContent = "";
 
   const firstName = document.getElementById("inp-first").value.trim();
